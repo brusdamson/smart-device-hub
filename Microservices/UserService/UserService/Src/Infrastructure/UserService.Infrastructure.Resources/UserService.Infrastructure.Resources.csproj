@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\UserService.Application\UserService.Application.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="ProjectResources\ResourceGeneral.resx">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="ProjectResources\ResourceMessages.resx">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="ProjectResources\ResourceMessages.ru.resx">
+		  <Generator>ResXFileCodeGenerator</Generator>
+		  <LastGenOutput>ResourceMessages.ru.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Update="ProjectResources\ResourceMessages.ru.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>ResourceMessages.ru.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+</Project>
