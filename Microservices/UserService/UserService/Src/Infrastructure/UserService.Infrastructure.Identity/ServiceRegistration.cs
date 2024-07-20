@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
+using AuthLibrary;
 using UserService.Application.Interfaces.UserInterfaces;
 using UserService.Application.Wrappers;
 using UserService.Infrastructure.Identity.Contexts;
@@ -39,14 +39,12 @@ namespace UserService.Infrastructure.Identity
 
             var identitySettings = configuration.GetSection(nameof(IdentitySettings)).Get<IdentitySettings>();
 
-            var jwtSettings = configuration.GetSection(nameof(JWTSettings)).Get<JWTSettings>();
-            services.AddSingleton(jwtSettings);
-
             services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = false;
-                options.SignIn.RequireConfirmedEmail = false;
+
                 options.User.RequireUniqueEmail = false;
+                options.SignIn.RequireConfirmedEmail = identitySettings.RequireUniqueEmail;
 
                 options.Password.RequireDigit = identitySettings.PasswordRequireDigit;
                 options.Password.RequiredLength = identitySettings.PasswordRequiredLength;
@@ -55,56 +53,41 @@ namespace UserService.Infrastructure.Identity
                 options.Password.RequireLowercase = identitySettings.PasswordRequireLowercase;
             }).AddEntityFrameworkStores<IdentityContext>().AddDefaultTokenProviders();
 
-            services.AddAuthentication(options =>
+            var jwtSettings = configuration.GetSection(nameof(AuthExtensions.JWTSettings)).Get<AuthExtensions.JWTSettings>();
+            services.AddSingleton(jwtSettings);
+            
+            
+            services.AddJwtAuthentication(jwtSettings, new JwtBearerEvents()
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(o =>
+                OnChallenge = async context =>
                 {
-                    o.RequireHttpsMetadata = false;
-                    o.SaveToken = true;
-                    o.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.Zero,
-                        ValidIssuer = jwtSettings.Issuer,
-                        ValidAudience = jwtSettings.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
-                    };
-                    o.Events = new JwtBearerEvents()
-                    {
-                        OnChallenge = async context =>
-                        {
-                            context.HandleResponse();
-                            context.Response.StatusCode = 401;
-                            await context.Response.WriteAsJsonAsync(new BaseResult(new Error(ErrorCode.AccessDenied, "You are not Authorized")));
-                        },
-                        OnForbidden = async context =>
-                        {
-                            context.Response.StatusCode = 403;
-                            await context.Response.WriteAsJsonAsync(new BaseResult(new Error(ErrorCode.AccessDenied, "You are not authorized to access this resource")));
-                        },
-                        OnTokenValidated = async context =>
-                        {
-                            var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
-                            if (claimsIdentity.Claims?.Any() is not true)
-                                context.Fail("This token has no claims.");
+                    context.HandleResponse();
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsJsonAsync(new BaseResult(new Error(ErrorCode.AccessDenied, "You are not Authorized")));
+                },
+                OnForbidden = async context =>
+                {
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsJsonAsync(new BaseResult(new Error(ErrorCode.AccessDenied, "You are not authorized to access this resource")));
+                },
+                OnTokenValidated = async context =>
+                {
+                    var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
+                    if (claimsIdentity.Claims?.Any() is not true)
+                        context.Fail("This token has no claims.");
 
-                            var securityStamp = claimsIdentity.FindFirst("AspNet.Identity.SecurityStamp");
-                            if (securityStamp is null)
-                                context.Fail("This token has no secuirty stamp");
+                    var securityStamp = claimsIdentity.FindFirst("AspNet.Identity.SecurityStamp");
+                    if (securityStamp is null)
+                        context.Fail("This token has no secuirty stamp");
 
-                            var signInManager = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
-                            var validatedUser = await signInManager.ValidateSecurityStampAsync(context.Principal);
-                            if (validatedUser is null)
-                                context.Fail("Token secuirty stamp is not valid.");
-                        },
+                    var signInManager = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
+                    var validatedUser = await signInManager.ValidateSecurityStampAsync(context.Principal);
+                    if (validatedUser is null)
+                        context.Fail("Token secuirty stamp is not valid.");
+                },
 
-                    };
-                });
+            });
+            
             return services;
         }
     }

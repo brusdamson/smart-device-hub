@@ -7,7 +7,7 @@ namespace UserService.Application.Interfaces.UserInterfaces
 {
     public interface IAccountServices
     {
-        Task<BaseResult<string>> RegisterGostAccount();
+        Task<BaseResult<string>> RegisterGhostAccount();
         Task<BaseResult> RegisterAccount(RegistrationRequest request);
         Task<BaseResult> ChangePassword(ChangePasswordRequest model);
         Task<BaseResult> ChangeUserName(ChangeUserNameRequest model);

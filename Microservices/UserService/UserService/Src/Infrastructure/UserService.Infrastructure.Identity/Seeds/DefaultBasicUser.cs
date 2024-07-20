@@ -12,10 +12,10 @@ namespace UserService.Infrastructure.Identity.Seeds
             //Seed Default User
             var defaultUser = new ApplicationUser
             {
-                UserName = "Admin",
-                Email = "Admin@Admin.com",
-                Name = "Saman",
-                PhoneNumber = "09304241296",
+                UserName = "admin",
+                Email = "admin@gmail.com",
+                Name = "admin",
+                PhoneNumber = "79999999999",
                 EmailConfirmed = true,
                 PhoneNumberConfirmed = true
             };
@@ -25,7 +25,7 @@ namespace UserService.Infrastructure.Identity.Seeds
                 var user = await userManager.FindByEmailAsync(defaultUser.Email);
                 if (user == null)
                 {
-                    await userManager.CreateAsync(defaultUser, "Sam@12345");
+                    await userManager.CreateAsync(defaultUser, "admin");
                 }
             }
         }

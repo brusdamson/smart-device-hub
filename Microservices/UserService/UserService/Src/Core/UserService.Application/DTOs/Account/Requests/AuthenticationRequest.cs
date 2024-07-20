@@ -22,7 +22,6 @@ namespace UserService.Application.DTOs.Account.Requests
             RuleFor(x => x.Password)
                 .NotEmpty()
                 .NotNull()
-                .Matches(Regexs.Password)
                 .WithName(p => translator[nameof(p.Password)]);
         }
     }
